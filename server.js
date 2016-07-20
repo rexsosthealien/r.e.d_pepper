@@ -1,5 +1,5 @@
-var dirPath = require('path').resolve(__dirname);
-var fileControler = require('./node_modules/express/lib/fileControler');
+
+var directoryControler = require('./FileDirectoriesController');
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 exports.createServer = function(){
@@ -26,7 +26,13 @@ exports.createServer = function(){
            });
         }
         connections.forEach(function (it) {
-            app[it.method](it.path, it.callback)
+            app[it.method](it.path, function (req, res) {
+                res.sendHTML = function (name, callback) {
+                    var path = directoryControler.getHTMLSourcesDirectory();
+                    res.sendFile(path + '/' + name + '.html', callback);
+                };
+                it.callback(req, res)
+            })
         });
         this.app.listen(port, callback)
 
@@ -38,15 +44,14 @@ exports.createServer = function(){
         this.app.set(name, module)
     }
     var obj = {
-        path : dirPath,
         app : app,
         use : use,
         listen : listen,
         setMethods : setMethods,
         engine : engine,
         set : set,
-        setDefaultHTMLSourcesDirectory : fileControler.setCorrectHTMLSourcesDirectory,
         createMongoDatabase : createMongoDatabase,
+        setDefaultHTMLSourcesDirectory : directoryControler.setDefaultHTMLSourcesDirectory,
         dbParams : []
 
     };
@@ -55,7 +60,7 @@ exports.createServer = function(){
             if (err) throw err;
             obj.db = database;
         }
-        obj.dbParams.push({path : path, name : name , callback : getDatabase})
+        obj.dbParams.push({path : path, name : name , callback : getDatabase});
         obj[name] = ''
     }
     return obj;
